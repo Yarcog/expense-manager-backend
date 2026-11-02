@@ -1,0 +1,37 @@
+Backend completo
+Spring Boot 4.1.1 con Java 21
+MongoDB con conexión forzada a expense_manager
+5 entidades: Category, Transaction, TransactionType, User, Role
+4 repositorios
+Servicios con lógica de negocio y validaciones
+6 controladores REST
+
+Seguridad de nivel profesional
+Autenticación JWT con expiración de 24h
+Passwords hasheados con bcrypt
+Registro + Login
+Sistema de roles (USER / ADMIN)
+Endpoints de admin protegidos con @PreAuthorize
+Aislamiento entre usuarios (cada uno ve solo sus datos)
+
+ Funcionalidades
+CRUD completo de Categorías
+CRUD completo de Transacciones con filtros
+Reportes con agregaciones MongoDB ($match, $group, $sum)
+Panel de administración
+Manejo global de errores
+Código de admin para crear más admins
+
+ 11 endpoints probados
+Login → 200 
+Listar categorías → 200 
+Ver categoría por ID → 200 
+Crear categoría → 201 
+Crear transacción → 201 
+Ver transacción por ID → 200 
+Listar transacciones → 200 
+Report Summary → 200 
+Report By Category → 200 
+Admin Listar usuarios → 200 
+Admin Stats → 200 
+
