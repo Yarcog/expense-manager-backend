@@ -2,6 +2,7 @@ package com.bryan.expense.category;
 
 import com.bryan.expense.category.dto.CategoryRequest;
 import com.bryan.expense.category.dto.CategoryResponse;
+import com.bryan.expense.transaction.TransactionType;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
 import org.springframework.security.core.Authentication;
@@ -24,6 +25,14 @@ public class CategoryService {
             throw new IllegalStateException("Usuario no autenticado");
         }
         return (String) auth.getPrincipal();
+    }
+
+    private void validateType(String type) {
+        try {
+            TransactionType.valueOf(type);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("El tipo debe ser INCOME o EXPENSE");
+        }
     }
 
     public List<CategoryResponse> findAll() {
@@ -50,6 +59,8 @@ public class CategoryService {
 
     public CategoryResponse create(CategoryRequest request) {
         String userId = getCurrentUserId();
+
+        validateType(request.type());
 
         if (repository.existsByUserIdAndName(userId, request.name())) {
             throw new IllegalArgumentException("Ya existe una categoría con ese nombre");
@@ -79,6 +90,8 @@ public class CategoryService {
         if (!category.getUserId().equals(getCurrentUserId())) {
             throw new NoSuchElementException("Categoría no encontrada");
         }
+
+        validateType(request.type());
 
         category.setName(request.name());
         category.setType(request.type());
