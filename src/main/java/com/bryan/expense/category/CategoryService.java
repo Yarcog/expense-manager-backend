@@ -2,6 +2,7 @@ package com.bryan.expense.category;
 
 import com.bryan.expense.category.dto.CategoryRequest;
 import com.bryan.expense.category.dto.CategoryResponse;
+import com.bryan.expense.transaction.TransactionRepository;
 import com.bryan.expense.transaction.TransactionType;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
@@ -18,6 +19,7 @@ import java.util.NoSuchElementException;
 public class CategoryService {
 
     private final CategoryRepository repository;
+    private final TransactionRepository transactionRepository;
 
     private String getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -112,6 +114,10 @@ public class CategoryService {
 
         if (!category.getUserId().equals(getCurrentUserId())) {
             throw new NoSuchElementException("Categoría no encontrada");
+        }
+
+        if (!transactionRepository.findByUserIdAndCategoryId(getCurrentUserId(), category.getId().toHexString()).isEmpty()) {
+            throw new IllegalArgumentException("No se puede eliminar la categoría porque tiene transacciones asociadas");
         }
 
         repository.deleteById(new ObjectId(id));
