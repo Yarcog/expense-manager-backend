@@ -95,6 +95,11 @@ public class CategoryService {
 
         validateType(request.type());
 
+        if (!request.type().equals(category.getType())
+                && !transactionRepository.findByUserIdAndCategoryId(getCurrentUserId(), category.getId().toHexString()).isEmpty()) {
+            throw new IllegalArgumentException("No se puede cambiar el tipo de una categoría que tiene transacciones asociadas");
+        }
+
         category.setName(request.name());
         category.setType(request.type());
         category.setIcon(request.icon());
