@@ -1,5 +1,6 @@
 package com.bryan.expense.transaction;
 
+import com.bryan.expense.category.Category;
 import com.bryan.expense.category.CategoryRepository;
 import com.bryan.expense.transaction.dto.TransactionRequest;
 import com.bryan.expense.transaction.dto.TransactionResponse;
@@ -26,6 +27,23 @@ public class TransactionService {
             throw new IllegalStateException("Usuario no autenticado");
         }
         return (String) auth.getPrincipal();
+    }
+
+    private void validateCategory(String categoryId, TransactionType type) {
+        if (!ObjectId.isValid(categoryId)) {
+            throw new IllegalArgumentException("La categoría no existe");
+        }
+
+        Category category = categoryRepository.findById(new ObjectId(categoryId))
+                .orElseThrow(() -> new IllegalArgumentException("La categoría no existe"));
+
+        if (!getCurrentUserId().equals(category.getUserId())) {
+            throw new IllegalArgumentException("La categoría no existe");
+        }
+
+        if (!type.name().equals(category.getType())) {
+            throw new IllegalArgumentException("El tipo de la transacción no coincide con el tipo de la categoría");
+        }
     }
 
     public List<TransactionResponse> findAll() {
@@ -73,13 +91,7 @@ public class TransactionService {
     }
 
     public TransactionResponse create(TransactionRequest request) {
-        // Validar categoría existente
-        if (!ObjectId.isValid(request.categoryId())) {
-            throw new IllegalArgumentException("La categoría no existe");
-        }
-        if (categoryRepository.findById(new ObjectId(request.categoryId())).isEmpty()) {
-            throw new IllegalArgumentException("La categoría no existe");
-        }
+        validateCategory(request.categoryId(), request.type());
 
         Transaction transaction = Transaction.builder()
                 .userId(getCurrentUserId())
@@ -107,12 +119,7 @@ public class TransactionService {
             throw new NoSuchElementException("Transacción no encontrada");
         }
 
-        if (!ObjectId.isValid(request.categoryId())) {
-            throw new IllegalArgumentException("La categoría no existe");
-        }
-        if (categoryRepository.findById(new ObjectId(request.categoryId())).isEmpty()) {
-            throw new IllegalArgumentException("La categoría no existe");
-        }
+        validateCategory(request.categoryId(), request.type());
 
         t.setCategoryId(request.categoryId());
         t.setType(request.type());
