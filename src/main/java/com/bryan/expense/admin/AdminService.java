@@ -1,5 +1,6 @@
 package com.bryan.expense.admin;
 
+import com.bryan.expense.account.AccountRepository;
 import com.bryan.expense.admin.dto.AdminStatsResponse;
 import com.bryan.expense.category.CategoryRepository;
 import com.bryan.expense.transaction.TransactionRepository;
@@ -23,6 +24,7 @@ public class AdminService {
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
     private final TransactionRepository transactionRepository;
+    private final AccountRepository accountRepository;
 
     public List<UserResponse> listAllUsers() {
         return userRepository.findAll()
@@ -64,9 +66,10 @@ public class AdminService {
             throw new IllegalArgumentException("No puedes eliminarte a ti mismo");
         }
 
-        // Cascade delete: borrar categorías y transacciones del usuario
+        // Cascade delete: borrar categorías, transacciones y cuentas del usuario
         categoryRepository.deleteAll(categoryRepository.findByUserId(userId));
         transactionRepository.deleteAll(transactionRepository.findByUserId(userId));
+        accountRepository.deleteAll(accountRepository.findByUserId(userId));
 
         userRepository.deleteById(new ObjectId(userId));
     }
