@@ -2,6 +2,8 @@ package com.bryan.expense.category;
 
 import com.bryan.expense.category.dto.CategoryRequest;
 import com.bryan.expense.category.dto.CategoryResponse;
+import com.bryan.expense.transaction.TransactionRepository;
+import com.bryan.expense.transaction.TransactionType;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
 import org.springframework.security.core.Authentication;
@@ -17,6 +19,7 @@ import java.util.NoSuchElementException;
 public class CategoryService {
 
     private final CategoryRepository repository;
+    private final TransactionRepository transactionRepository;
 
     private String getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -24,6 +27,14 @@ public class CategoryService {
             throw new IllegalStateException("Usuario no autenticado");
         }
         return (String) auth.getPrincipal();
+    }
+
+    private void validateType(String type) {
+        try {
+            TransactionType.valueOf(type);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("El tipo debe ser INCOME o EXPENSE");
+        }
     }
 
     public List<CategoryResponse> findAll() {
@@ -50,6 +61,8 @@ public class CategoryService {
 
     public CategoryResponse create(CategoryRequest request) {
         String userId = getCurrentUserId();
+
+        validateType(request.type());
 
         if (repository.existsByUserIdAndName(userId, request.name())) {
             throw new IllegalArgumentException("Ya existe una categoría con ese nombre");
@@ -80,6 +93,13 @@ public class CategoryService {
             throw new NoSuchElementException("Categoría no encontrada");
         }
 
+        validateType(request.type());
+
+        if (!request.type().equals(category.getType())
+                && !transactionRepository.findByUserIdAndCategoryId(getCurrentUserId(), category.getId().toHexString()).isEmpty()) {
+            throw new IllegalArgumentException("No se puede cambiar el tipo de una categoría que tiene transacciones asociadas");
+        }
+
         category.setName(request.name());
         category.setType(request.type());
         category.setIcon(request.icon());
@@ -99,6 +119,10 @@ public class CategoryService {
 
         if (!category.getUserId().equals(getCurrentUserId())) {
             throw new NoSuchElementException("Categoría no encontrada");
+        }
+
+        if (!transactionRepository.findByUserIdAndCategoryId(getCurrentUserId(), category.getId().toHexString()).isEmpty()) {
+            throw new IllegalArgumentException("No se puede eliminar la categoría porque tiene transacciones asociadas");
         }
 
         repository.deleteById(new ObjectId(id));

@@ -22,6 +22,7 @@ public class Transaction {
 
     private String userId;
     private String categoryId;
+    private String accountId;
     private TransactionType type;
     private Double amount;
     private String description;

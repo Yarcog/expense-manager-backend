@@ -1,5 +1,8 @@
 package com.bryan.expense.transaction;
 
+import com.bryan.expense.account.Account;
+import com.bryan.expense.account.AccountRepository;
+import com.bryan.expense.category.Category;
 import com.bryan.expense.category.CategoryRepository;
 import com.bryan.expense.transaction.dto.TransactionRequest;
 import com.bryan.expense.transaction.dto.TransactionResponse;
@@ -19,6 +22,7 @@ public class TransactionService {
 
     private final TransactionRepository repository;
     private final CategoryRepository categoryRepository;
+    private final AccountRepository accountRepository;
 
     private String getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -26,6 +30,36 @@ public class TransactionService {
             throw new IllegalStateException("Usuario no autenticado");
         }
         return (String) auth.getPrincipal();
+    }
+
+    private void validateCategory(String categoryId, TransactionType type) {
+        if (!ObjectId.isValid(categoryId)) {
+            throw new IllegalArgumentException("La categoría no existe");
+        }
+
+        Category category = categoryRepository.findById(new ObjectId(categoryId))
+                .orElseThrow(() -> new IllegalArgumentException("La categoría no existe"));
+
+        if (!getCurrentUserId().equals(category.getUserId())) {
+            throw new IllegalArgumentException("La categoría no existe");
+        }
+
+        if (!type.name().equals(category.getType())) {
+            throw new IllegalArgumentException("El tipo de la transacción no coincide con el tipo de la categoría");
+        }
+    }
+
+    private void validateAccount(String accountId) {
+        if (!ObjectId.isValid(accountId)) {
+            throw new IllegalArgumentException("La cuenta no existe");
+        }
+
+        Account account = accountRepository.findById(new ObjectId(accountId))
+                .orElseThrow(() -> new IllegalArgumentException("La cuenta no existe"));
+
+        if (!getCurrentUserId().equals(account.getUserId())) {
+            throw new IllegalArgumentException("La cuenta no existe");
+        }
     }
 
     public List<TransactionResponse> findAll() {
@@ -73,17 +107,16 @@ public class TransactionService {
     }
 
     public TransactionResponse create(TransactionRequest request) {
-        // Validar categoría existente
-        if (!ObjectId.isValid(request.categoryId())) {
-            throw new IllegalArgumentException("La categoría no existe");
-        }
-        if (categoryRepository.findById(new ObjectId(request.categoryId())).isEmpty()) {
-            throw new IllegalArgumentException("La categoría no existe");
+        validateCategory(request.categoryId(), request.type());
+
+        if (request.accountId() != null) {
+            validateAccount(request.accountId());
         }
 
         Transaction transaction = Transaction.builder()
                 .userId(getCurrentUserId())
                 .categoryId(request.categoryId())
+                .accountId(request.accountId())
                 .type(request.type())
                 .amount(request.amount())
                 .description(request.description())
@@ -107,11 +140,13 @@ public class TransactionService {
             throw new NoSuchElementException("Transacción no encontrada");
         }
 
-        if (!ObjectId.isValid(request.categoryId())) {
-            throw new IllegalArgumentException("La categoría no existe");
-        }
-        if (categoryRepository.findById(new ObjectId(request.categoryId())).isEmpty()) {
-            throw new IllegalArgumentException("La categoría no existe");
+        validateCategory(request.categoryId(), request.type());
+
+        // Si no viene accountId se conserva la cuenta actual: el frontend que aún no
+        // conoce las cuentas no debe desasociar la transacción al editarla.
+        if (request.accountId() != null) {
+            validateAccount(request.accountId());
+            t.setAccountId(request.accountId());
         }
 
         t.setCategoryId(request.categoryId());
