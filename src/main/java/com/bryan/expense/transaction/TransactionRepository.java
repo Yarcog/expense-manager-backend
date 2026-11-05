@@ -18,4 +18,6 @@ public interface TransactionRepository extends MongoRepository<Transaction, Obje
             String userId, LocalDateTime from, LocalDateTime to);
 
     List<Transaction> findByUserIdAndCategoryId(String userId, String categoryId);
+
+    List<Transaction> findByUserIdAndAccountId(String userId, String accountId);
 }
