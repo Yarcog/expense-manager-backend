@@ -1,5 +1,7 @@
 package com.bryan.expense.transaction;
 
+import com.bryan.expense.account.Account;
+import com.bryan.expense.account.AccountRepository;
 import com.bryan.expense.category.Category;
 import com.bryan.expense.category.CategoryRepository;
 import com.bryan.expense.transaction.dto.TransactionRequest;
@@ -20,6 +22,7 @@ public class TransactionService {
 
     private final TransactionRepository repository;
     private final CategoryRepository categoryRepository;
+    private final AccountRepository accountRepository;
 
     private String getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -43,6 +46,19 @@ public class TransactionService {
 
         if (!type.name().equals(category.getType())) {
             throw new IllegalArgumentException("El tipo de la transacción no coincide con el tipo de la categoría");
+        }
+    }
+
+    private void validateAccount(String accountId) {
+        if (!ObjectId.isValid(accountId)) {
+            throw new IllegalArgumentException("La cuenta no existe");
+        }
+
+        Account account = accountRepository.findById(new ObjectId(accountId))
+                .orElseThrow(() -> new IllegalArgumentException("La cuenta no existe"));
+
+        if (!getCurrentUserId().equals(account.getUserId())) {
+            throw new IllegalArgumentException("La cuenta no existe");
         }
     }
 
@@ -93,9 +109,14 @@ public class TransactionService {
     public TransactionResponse create(TransactionRequest request) {
         validateCategory(request.categoryId(), request.type());
 
+        if (request.accountId() != null) {
+            validateAccount(request.accountId());
+        }
+
         Transaction transaction = Transaction.builder()
                 .userId(getCurrentUserId())
                 .categoryId(request.categoryId())
+                .accountId(request.accountId())
                 .type(request.type())
                 .amount(request.amount())
                 .description(request.description())
@@ -120,6 +141,13 @@ public class TransactionService {
         }
 
         validateCategory(request.categoryId(), request.type());
+
+        // Si no viene accountId se conserva la cuenta actual: el frontend que aún no
+        // conoce las cuentas no debe desasociar la transacción al editarla.
+        if (request.accountId() != null) {
+            validateAccount(request.accountId());
+            t.setAccountId(request.accountId());
+        }
 
         t.setCategoryId(request.categoryId());
         t.setType(request.type());

@@ -11,6 +11,8 @@ public record TransactionRequest(
         @NotBlank(message = "El ID de la categoría es obligatorio")
         String categoryId,
 
+        String accountId,
+
         @NotNull(message = "El tipo es obligatorio")
         TransactionType type,
 

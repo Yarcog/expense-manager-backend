@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 public record TransactionResponse(
         String id,
         String categoryId,
+        String accountId,
         TransactionType type,
         Double amount,
         String description,
@@ -18,6 +19,7 @@ public record TransactionResponse(
         return new TransactionResponse(
                 transaction.getId() != null ? transaction.getId().toHexString() : null,
                 transaction.getCategoryId(),
+                transaction.getAccountId(),
                 transaction.getType(),
                 transaction.getAmount(),
                 transaction.getDescription(),
